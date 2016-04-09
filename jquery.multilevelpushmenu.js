@@ -4,14 +4,13 @@
  * Licensed under the MIT license.
  * http://www.opensource.org/licenses/mit-license.php
  * 
- * Copyright 2013-2014, Make IT d.o.o.
+ * Copyright 2013, Make IT d.o.o.
  * http://multi-level-push-menu.make.rs
  * https://github.com/adgsm/multi-level-push-menu
  */
 (function ( $ ) {
 	$.fn.multilevelpushmenu = function( options ) {
-		"use strict";
-		var args = arguments,
+		var args = arguments;
 			returnValue = null;
 		
 		this.each(function(){
@@ -43,9 +42,6 @@
 				preventItemClick: true,
 				preventGroupItemClick: true,
 				swipe: 'both',
-				durationSlideOut: 400,
-				durationSlideDown: 500,
-				durationTransition: 400,
 				onCollapseMenuStart: function() {},
 				onCollapseMenuEnd: function() {},
 				onExpandMenuStart: function() {},
@@ -151,7 +147,6 @@
 				$element.on( event , function ( e , ee ) {
 					$element.hide();
 					try {
-						if(!e.pageX || !e.pageY) return false;
 						ee = ee || {
 							pageX: e.pageX,
 							pageY: e.pageY
@@ -183,6 +178,9 @@
 					    .attr( { "class" : "levelHolderClass" + ( ( instance.settings.direction == 'rtl' ) ? " rtl" : " ltr" ), "data-level" : menus.level, "style" : ( ( instance.settings.direction == 'rtl' ) ? "margin-right: " : "margin-left: " ) + ( ( menus.level == 0 && !instance.settings.collapsed ) ? 0 : "-200%" ) } )
 					    .appendTo( $wrapper ),
 					    extWidth = ( isValidDim( instance.settings.menuWidth ) || ( isInt( instance.settings.menuWidth ) && instance.settings.menuWidth > 0 ) );
+					$levelHolder.on( clickEventType , function( e ) {
+						stopEventPropagation( e );
+					});
 					$levelHolder.bind( dragEventType ,  function(e){
 						holderSwipe( e, $levelHolder );
 					});
@@ -220,6 +218,9 @@
 					    .attr( { "class" : "levelHolderClass" + ( ( instance.settings.direction == 'rtl' ) ? " rtl" : " ltr" ), "data-level" : $wrapper.level, "style" : ( ( instance.settings.direction == 'rtl' ) ? "margin-right: " : "margin-left: " ) + ( ( $wrapper.level == 0 && !instance.settings.collapsed ) ? 0 : "-200%" ) } )
 					    .appendTo( $wrapper ),
 					    extWidth = ( isValidDim( instance.settings.menuWidth ) || ( isInt( instance.settings.menuWidth ) && instance.settings.menuWidth > 0 ) );
+					$levelHolder.on( clickEventType , function( e ) {
+						stopEventPropagation( e );
+					});
 					$levelHolder.bind( dragEventType ,  function(e){
 						holderSwipe( e, $levelHolder );
 					});
@@ -342,8 +343,8 @@
 					position = arguments[2],
 					$itemGroup = $levelHolder.find( 'ul:first' ),
 					$item = $( "<li />" );
-					( position < ( $itemGroup.children( 'li' ).length ) && position >= 0 ) ? 
-						$item.insertBefore( $itemGroup.children( 'li' ).eq( position ) ) : $item.appendTo( $itemGroup );
+					( position < ( $itemGroup.find( 'li' ).length ) && position >= 0 ) ? 
+						$item.insertBefore( $itemGroup.find( 'li' ).eq( position ) ) : $item.appendTo( $itemGroup );
 					$item.attr( { "style" : "text-align: " + ( ( instance.settings.direction == 'rtl' ) ? "right" : "left" ) } );
 				    if( item.id != undefined ) $item.attr( { "id" : item.id } );
 					var $itemAnchor = $( "<a />" )
@@ -500,7 +501,11 @@
 					else {
 						$('#' + instance.settings.menuID).height( maxHeight );
 					}
+//					instance.settings.container.css( 'min-width' , '' );
+//					instance.settings.container.css( 'min-width' , maxExtWidth + 'px' );
 					instance.settings.container.css( 'min-height' , maxHeight + 'px' );
+//					instance.settings.container.children( 'nav:first' ).css( 'min-width' , '' );
+//					instance.settings.container.children( 'nav:first' ).css( 'min-width' , maxExtWidth + 'px' );
 					instance.settings.container.children( 'nav:first' ).css( 'min-height' , maxHeight + 'px' );
 					instance.settings.container.width( maxExtWidth );
 					instance.settings.container.height( maxHeight );
@@ -593,18 +598,18 @@
 			// Initialize menu in collapsed/expanded mode 
 			function startMode( mode ) {
 				if( mode ) {
-					var $baseLevelHolder = $('#' + instance.settings.menuID + ' div.levelHolderClass:first');
+					$baseLevelHolder = $('#' + instance.settings.menuID + ' div.levelHolderClass:first');
 					$baseLevelHolder.find( 'ul' ).hide();
 					$baseLevelHolder.addClass( instance.settings.menuInactiveClass );
 					if( instance.settings.direction == 'rtl' ) {
 						$baseLevelHolder.stop().animate({
 							marginRight: ( ( -1 ) * $baseLevelHolder.width() + ( ( instance.settings.fullCollapse ) ? 0 : instance.settings.overlapWidth ) )
-						}, instance.settings.durationSlideOut)
+						})
 					}
 					else {
 						$baseLevelHolder.stop().animate({
 							marginLeft:  ( ( -1 ) * $baseLevelHolder.width() + ( ( instance.settings.fullCollapse ) ? 0 : instance.settings.overlapWidth ) )
-						}, instance.settings.durationSlideOut);
+						});
 					}
 				}
 			}
@@ -620,7 +625,7 @@
 					$( this ).stop().animate({
 						marginLeft:  lM + ( ( instance.settings.direction == 'rtl' ) ? (-1) : 1 ) * absMove,
 						marginRight: rM + ( ( instance.settings.direction == 'rtl' ) ? 1 : (-1) ) * absMove
-					}, instance.settings.durationSlideOut);
+					});
 				});
 			}
 
@@ -678,18 +683,21 @@
 					collapingObjects[ 'prevAnimEnded' ] = false;
 					$nextLevelHolders.each(function( key, val ){
 						ieShadowFilterDistortion = ($( val ).css('filter').match(/DXImageTransform\.Microsoft\.Shadow/)) ? $( val ).get(0).filters.item("DXImageTransform.Microsoft.Shadow").strength : 0;
-						lwidth = ( instance.settings.mode == 'overlap' ) ? $( val ).width() - ( $nextLevelHolders.length + $prevLevelHolders.length - $( val ).attr( 'data-level' ) - 1) * ( instance.settings.overlapWidth + ieShadowFilterDistortion ) - ieShadowFilterDistortion : $( val ).width() - ieShadowFilterDistortion
+						// lwidth = ( instance.settings.mode == 'overlap' ) ? $( val ).width() - ( $nextLevelHolders.length + $prevLevelHolders.length - $( val ).attr( 'data-level' ) - 1) * ( instance.settings.overlapWidth + ieShadowFilterDistortion ) - ieShadowFilterDistortion : $( val ).width() - ieShadowFilterDistortion;
+
+						lwidth = $( val ).width() - ieShadowFilterDistortion;
+
 						if( instance.settings.direction == 'rtl' ) {
 							$( val ).stop().animate({
 								marginRight : ( (-1) * lwidth ),
 								width: lwidth
-							}, instance.settings.durationTransition);
+							});
 						}
 						else {
 							$( val ).stop().animate({
 								marginLeft : ( (-1) * lwidth ),
 								width: lwidth
-							}, instance.settings.durationTransition);
+							});
 						}
 					});
 					collapingObjects[ 'nextAnimEnded' ] = ( $nextLevelHolders.length > 0 ) ? false : true ;
@@ -717,9 +725,9 @@
 										( ( -1 ) * $( val ).width() + ( ( instance.settings.mode == 'overlap' ) ? $nextLevelHolders.length + 1 : 1 ) * instance.settings.overlapWidth )
 									:
 									0
-							}, instance.settings.durationSlideOut, function(){
+							}, function(){
 								if( $( val ).attr( 'data-level' ) == $baseLevelHolder.attr( 'data-level' ) && collapseAll ){
-									$baseLevelHolder.children( 'ul' ).first().hide(instance.settings.durationSlideDown, function(){
+									$baseLevelHolder.children( 'ul' ).first().hide(500, function(){
 										$baseLevelHolder.addClass( instance.settings.menuInactiveClass );
 									});
 								}
@@ -737,9 +745,9 @@
 										( ( -1 ) * $( val ).width() + ( ( instance.settings.mode == 'overlap' ) ? $nextLevelHolders.length + 1 : 1 ) * instance.settings.overlapWidth )
 									:
 									0
-							}, instance.settings.durationSlideOut, function(){
+							}, function(){
 								if( $( val ).attr( 'data-level' ) == $baseLevelHolder.attr( 'data-level' ) && collapseAll ){
-									$baseLevelHolder.children( 'ul' ).first().hide(instance.settings.durationSlideDown, function(){
+									$baseLevelHolder.children( 'ul' ).first().hide(500, function(){
 										$baseLevelHolder.addClass( instance.settings.menuInactiveClass );
 									});
 								}
@@ -794,8 +802,8 @@
 					if( instance.settings.direction == 'rtl' ) {
 						$baseLevelHolder.stop().animate({
 							marginRight: 0
-						}, instance.settings.durationSlideOut, function(){
-							$baseLevelHolder.children( 'ul' ).first().show(instance.settings.durationSlideDown , function(){
+						},function(){
+							$baseLevelHolder.children( 'ul' ).first().show(500 , function(){
 								expandingObjects[ 'baseAnimEnded' ] = true;
 								animatedEventCallback( expandingObjects , callbacks );
 							});
@@ -804,8 +812,8 @@
 					else {
 						$baseLevelHolder.stop().animate({
 							marginLeft: 0
-						}, instance.settings.durationSlideOut, function(){
-							$baseLevelHolder.children( 'ul' ).first().show(instance.settings.durationSlideDown , function(){
+						},function(){
+							$baseLevelHolder.children( 'ul' ).first().show(500 , function(){
 								expandingObjects[ 'baseAnimEnded' ] = true;
 								animatedEventCallback( expandingObjects , callbacks );
 							});
@@ -814,7 +822,6 @@
 					blpush = ( instance.settings.fullCollapse ) ? $baseLevelHolder.width() : $baseLevelHolder.width() - instance.settings.overlapWidth;
 					var pushbm = ( !menuExpanded( $baseLevelHolder ) ) ? pushContainers( blpush ) : null;
 				} else {
-					var $selectedLevelHolder;
 					if( typeof menuTitle == 'object' ) {
 						$selectedLevelHolder = menuTitle;
 					}
@@ -828,10 +835,9 @@
 					if( $selectedLevelHolder && $selectedLevelHolder.length == 1 ) {
 						var $activeLevelHolder = activeMenu(),
 							activeLevel = ( $activeLevelHolder.length == 1 ) ? $activeLevelHolder.attr( 'data-level' ) : 0,
-							baseWidth = $selectedLevelHolder.width(),
-							setToOpenHolders = pathToRoot( $selectedLevelHolder );
+							baseWidth = $selectedLevelHolder.width();
 						expandingObjects[ 'setToOpenAnimEnded' ] = false;
-						if( setToOpenHolders ) {
+						if( setToOpenHolders = pathToRoot( $selectedLevelHolder ) ) {
 							var parentLevelHoldersLen = $( setToOpenHolders ).length - 1;
 							$baseLevelHolder.find( 'ul' ).each(function(){
 								$( this ).show(0);
@@ -841,14 +847,21 @@
 							$( setToOpenHolders ).find( '.' + instance.settings.backItemClass ).css( 'visibility' , 'hidden' );
 							$( setToOpenHolders ).each( function( key, val ) {
 								ieShadowFilterDistortion = ($( val ).css('filter').match(/DXImageTransform\.Microsoft\.Shadow/)) ? $( val ).get(0).filters.item("DXImageTransform.Microsoft.Shadow").strength : 0;
-								lwidth = baseWidth - ieShadowFilterDistortion + ( parentLevelHoldersLen - $( val ).attr( 'data-level' ) ) * ( instance.settings.overlapWidth + ieShadowFilterDistortion );
-								if(instance.settings.container.width() < lwidth && instance.settings.mode == 'overlap' )
-									sizeElementWidth( instance.settings.container , lwidth );
+								// lwidth = baseWidth - ieShadowFilterDistortion + ( parentLevelHoldersLen - $( val ).attr( 'data-level' ) ) * ( instance.settings.overlapWidth + ieShadowFilterDistortion );
+								lwidth = parseInt($(val).attr('data-width') || 0);
+
+								if (!lwidth) {
+									lwidth = baseWidth - ieShadowFilterDistortion - $( val ).attr( 'data-level' ) * ( instance.settings.overlapWidth + ieShadowFilterDistortion );
+									$(val).attr('data-width', lwidth);
+								}
+								// if(instance.settings.container.width() > lwidth + 10 && instance.settings.mode == 'overlap' )
+								if($(val).width() > lwidth && instance.settings.mode == 'overlap' )
+									sizeElementWidth($(val), lwidth );
 								if( instance.settings.direction == 'rtl' ) {
 									$( val ).stop().animate({
 										marginRight: 0,
 										width: ( instance.settings.mode == 'overlap' ) ? lwidth : baseWidth - ieShadowFilterDistortion
-									}, instance.settings.durationTransition, function(){
+									}, function(){
 										$( val ).addClass( instance.settings.menuInactiveClass );
 									});
 								}
@@ -856,7 +869,7 @@
 									$( val ).stop().animate({
 										marginLeft: 0,
 										width: ( instance.settings.mode == 'overlap' ) ? lwidth : baseWidth - ieShadowFilterDistortion
-									}, instance.settings.durationTransition, function(){
+									}, function(){
 										$( val ).addClass( instance.settings.menuInactiveClass );
 									});
 								}
@@ -931,10 +944,7 @@
 					$selectedLevelHolders = instance.settings.container
 					.find( '#' + instance.settings.menuID + ' div.levelHolderClass' )
 					.filter(function(){
-						var text = $( this ).children( 'h2' ).text();
-						return ( menuTitle.constructor.name === "RegExp" ) ?
-							text.match(menuTitle) :
-							text === menuTitle.toString();
+						return ( ($( this ).children( 'h2' ).text() == menuTitle ) );
 					});
 				if( $selectedLevelHolders.length > 0 ) {
 					returnValue = $selectedLevelHolders;
@@ -954,10 +964,7 @@
 					$selectedItems = instance.settings.container
 					.find( '#' + instance.settings.menuID + ' div.levelHolderClass li' )
 					.filter(function(){
-						var text = $( this ).children( 'a' ).text();
-						return ( itemName.constructor.name === "RegExp" ) ?
-							text.match(itemName) :
-							text === itemName.toString();
+						return ( ($( this ).children( 'a' ).text() == itemName ) );
 					});
 				if( $selectedItems.length > 0 ) {
 					returnValue = $selectedItems;
@@ -1019,10 +1026,10 @@
 						return retObjs;
 					}),
 					maxLevel = Math.max.apply( null,
-				        $activeLevelHolders.map(function(){ return $(this).attr( 'data-level' ); }).get() ),
-					$activeLevelHolder = $activeLevelHolders.filter(function(){
-						return $( this ).attr( 'data-level' ) == maxLevel;
-					});
+				        $activeLevelHolders.map(function(){ return $(this).attr( 'data-level' ); }).get() );
+				$activeLevelHolder = $activeLevelHolders.filter(function(){
+					return $( this ).attr( 'data-level' ) == maxLevel;
+				});
 				returnValue = $activeLevelHolder;
 				return returnValue;
 			}
